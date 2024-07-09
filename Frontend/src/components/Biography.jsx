@@ -1,6 +1,6 @@
 import React from "react";
 
-const Biography = ({imageUrl}) => {
+const Biography = ({ imageUrl }) => {
   return (
     <>
       <div className="container biography">
@@ -11,25 +11,26 @@ const Biography = ({imageUrl}) => {
           <p>Biography</p>
           <h3>Who We Are</h3>
           <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ducimus
-            blanditiis sequi aperiam. Debitis fugiat harum ex maxime illo
-            consequatur mollitia voluptatem omnis nihil nesciunt beatae esse
-            ipsam, sapiente totam aspernatur porro ducimus aperiam nisi. Ex
-            magnam voluptatum consectetur reprehenderit fugiat recusandae aut
-            similique illum natus velit, praesentium nostrum nesciunt. Deleniti,
-            nesciunt laboriosam totam iusto!
+            Zeecare Medical Institute is a beacon of excellence in healthcare,
+            dedicated to compassionate and comprehensive services. Founded on
+            patient-centered care, we blend advanced technology with skilled
+            professionals across diverse medical disciplines. Our institute
+            ensures personalized attention and high standards of expertise.
+            Zeecare prioritizes innovation and integrity, enhancing community
+            health through ongoing research and patient care advancements.
           </p>
           <p>We are all in 2024!</p>
           <p>We are working on a MERN STACK PROJECT.</p>
           <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolores
-            assumenda exercitationem accusamus sit repellendus quo optio dolorum
-            corporis corrupti. Quas similique vel minima veniam tenetur
-            obcaecati atque magni suscipit laboriosam! Veniam vitae minus nihil
-            cupiditate natus provident. Ex illum quasi pariatur odit nisi
-            voluptas illo qui ipsum mollitia. Libero, assumenda?
+            At Zeecare Medical Institute, we go beyond medical treatment. We
+            create a supportive environment where patients receive holistic
+            care, focusing on both physical healing and emotional well-being.
+            Through preventive health initiatives and patient education, we
+            empower informed choices for lasting wellness. Zeecare is your
+            trusted partner in health, dedicated to enriching lives and
+            promoting a healthier future.
           </p>
-          <p>Lorem ipsum dolor sit amet!</p>
+          <b />
           <p>Coding is fun!</p>
         </div>
       </div>

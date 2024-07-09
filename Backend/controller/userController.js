@@ -56,7 +56,7 @@ export const login = catchAsyncErrors(async (req, res, next) => {
   const { email, password, confirmPassword, role } = req.body;
 
   if (!email || !password || !confirmPassword || !role) {
-    return next(new ErrorHandler("Please Provide All Details!", 400));
+    return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
   if (password !== confirmPassword) {

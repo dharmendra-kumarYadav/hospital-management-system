@@ -24,10 +24,12 @@ body {
   background: #fff;
   color: #111;
 }
+
 .purple-btn {
   background: #9083d5;
   color: #fff;
 }
+
 p,
 span,
 a {
@@ -203,6 +205,10 @@ h6 {
   font-size: 24px;
   margin-bottom: 30px;
   background: linear-gradient(140deg, #9083d5, #271776ca);
+}
+
+.form-component button:hover{
+  background-color: #8570ed;
 }
 .form-component .wrapper {
   display: flex;
@@ -475,7 +481,7 @@ nav .navLinks .links a {
   letter-spacing: 1.4px;
 }
 nav .navLinks .links a:hover {
-  color: #000;
+  color: #4f52d6;
   transition: 0.3s;
   cursor: pointer;
 }
@@ -489,14 +495,23 @@ nav .btn {
   font-weight: 600;
   z-index: 2;
 }
+
 nav .logoutBtn {
   background: linear-gradient(135deg, black, rgb(49, 49, 49));
   cursor: pointer;
 }
 nav .loginBtn {
-  background: linear-gradient(135deg, black, rgb(49, 49, 49));
+  background-color: #000;
   cursor: pointer;
 }
+.loginBtn:hover,
+.logoutBtn:hover {
+  background-color: #3a3939;
+  color: #eee0e0;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+
 nav .hamburger {
   display: none;
 }

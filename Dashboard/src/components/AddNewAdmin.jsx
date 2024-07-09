@@ -1,11 +1,11 @@
-import axios from "axios";
 import React, { useContext, useState } from "react";
-import { toast } from "react-toastify";
 import { Context } from "../main";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import axios from "axios";
 
-const Register = () => {
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
+const AddNewAdmin = () => {
+  const { isAuthenticated } = useContext(Context);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -18,12 +18,12 @@ const Register = () => {
 
   const navigateTo = useNavigate();
 
-  const handleRegistration = async (e) => {
+  const handleAddNewAdmin = async (e) => {
     e.preventDefault();
     try {
       await axios
         .post(
-          "http://localhost:4000/api/v1/user/patient/register",
+          "http://localhost:4000/api/v1/user/admin/addnew",
           {
             firstName,
             lastName,
@@ -33,7 +33,6 @@ const Register = () => {
             dob,
             gender,
             password,
-            role: "Patient",
           },
           {
             withCredentials: true,
@@ -42,36 +41,23 @@ const Register = () => {
         )
         .then((res) => {
           toast.success(res.data.message);
-          setIsAuthenticated(true);
           navigateTo("/");
-          setFirstName("");
-          setLastName("");
-          setEmail("");
-          setPhone("");
-          setAdhar("");
-          setDob("");
-          setGender("");
-          setPassword("");
         });
     } catch (error) {
       toast.error(error.response.data.message);
     }
   };
 
-  if (isAuthenticated) {
-    return <Navigate to={"/"} />;
+  if (!isAuthenticated) {
+    return <Navigate to={"/login"} />;
   }
 
   return (
-    <>
-      <div className="container form-component register-form">
-        <h2>Sign Up</h2>
-        <p>Please Sign Up To Continue</p>
-        <p>
-          Please sign up to access hospital services and manage your
-          appointments.
-        </p>
-        <form onSubmit={handleRegistration}>
+    <section className="page">
+      <section className="container form-component add-admin-form">
+        <img src="/logo.png" alt="logo" className="logo" />
+        <h1 className="form-title">ADD NEW ADMIN</h1>
+        <form onSubmit={handleAddNewAdmin}>
           <div>
             <input
               type="text"
@@ -127,28 +113,13 @@ const Register = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <div
-            style={{
-              gap: "10px",
-              justifyContent: "flex-end",
-              flexDirection: "row",
-            }}
-          >
-            <p style={{ marginBottom: 0 }}>Already Registered?</p>
-            <Link
-              to={"/login"}
-              style={{ textDecoration: "none", color: "#271776ca" }}
-            >
-              Login Now
-            </Link>
-          </div>
           <div style={{ justifyContent: "center", alignItems: "center" }}>
-            <button type="submit">Register</button>
+            <button type="submit">ADD NEW ADMIN</button>
           </div>
         </form>
-      </div>
-    </>
+      </section>
+    </section>
   );
 };
 
-export default Register;
+export default AddNewAdmin;

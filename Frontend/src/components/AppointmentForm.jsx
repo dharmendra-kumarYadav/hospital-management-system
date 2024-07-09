@@ -12,7 +12,7 @@ const AppointmentForm = () => {
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
-  const [department, setDepartment] = useState("Pediatrics");
+  const [department, setDepartment] = useState("");
   const [doctorFirstName, setDoctorFirstName] = useState("");
   const [doctorLastName, setDoctorLastName] = useState("");
   const [address, setAddress] = useState("");
@@ -144,6 +144,7 @@ const AppointmentForm = () => {
                 setDoctorLastName("");
               }}
             >
+              <option>Select Doctor</option>
               {departmentsArray.map((depart, index) => {
                 return (
                   <option value={depart} key={index}>
