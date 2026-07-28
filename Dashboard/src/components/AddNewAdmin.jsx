@@ -1,3 +1,4 @@
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import React, { useContext, useState } from "react";
 import { Context } from "../main";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -7,6 +8,8 @@ import axios from "axios";
 const AddNewAdmin = () => {
   const { isAuthenticated } = useContext(Context);
 
+  const navigateTo = useNavigate();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,107 +18,279 @@ const AddNewAdmin = () => {
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const navigateTo = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleAddNewAdmin = async (e) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast.error("Password and Confirm Password do not match!");
+      return;
+    }
+
     try {
-      await axios
-        .post(
-          "http://localhost:4000/api/v1/user/admin/addnew",
-          {
-            firstName,
-            lastName,
-            email,
-            phone,
-            adhar,
-            dob,
-            gender,
-            password,
+      const { data } = await axios.post(
+        "http://localhost:4000/api/v1/user/admin/addnew",
+        {
+          firstName,
+          lastName,
+          email,
+          phone,
+          adhar,
+          dob,
+          gender,
+          password,
+          confirmPassword,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
           },
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-          }
-        )
-        .then((res) => {
-          toast.success(res.data.message);
-          navigateTo("/");
-        });
+        }
+      );
+
+      toast.success(data.message);
+
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPhone("");
+      setAdhar("");
+      setDob("");
+      setGender("");
+      setPassword("");
+      setConfirmPassword("");
+
+      navigateTo("/");
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
   if (!isAuthenticated) {
-    return <Navigate to={"/login"} />;
+    return <Navigate to="/login" />;
   }
 
   return (
     <section className="page">
       <section className="container form-component add-admin-form">
         <img src="/logo.png" alt="logo" className="logo" />
+
         <h1 className="form-title">ADD NEW ADMIN</h1>
-        <form onSubmit={handleAddNewAdmin}>
-          <div>
-            <input
-              type="text"
-              placeholder="First Name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
+
+        <form onSubmit={handleAddNewAdmin} autoComplete="off">
+
+          {/* First Row */}
+          <div className="form-row">
+
+            <div className="form-group">
+              <label>
+                First Name <span className="required">*</span>
+              </label>
+
+              <input
+                type="text"
+                name="firstName"
+                placeholder="Enter first name"
+                value={firstName}
+                required
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Last Name</label>
+
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Enter last name (optional)"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+
           </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Mobile Number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+
+          {/* Second Row */}
+
+          <div className="form-row">
+
+            <div className="form-group">
+              <label>
+                Email Address <span className="required">*</span>
+              </label>
+
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter email address"
+                value={email}
+                required
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>
+                Mobile Number <span className="required">*</span>
+              </label>
+
+              <input
+                type="tel"
+                name="phone"
+                placeholder="Enter mobile number"
+                value={phone}
+                maxLength={10}
+                required
+                onChange={(e) =>
+                  setPhone(e.target.value.replace(/\D/g, ""))
+                }
+              />
+            </div>
+
           </div>
-          <div>
-            <input
-              type="number"
-              placeholder="Adhar"
-              value={adhar}
-              onChange={(e) => setAdhar(e.target.value)}
-            />
-            <input
-              type={"date"}
-              placeholder="Date of Birth"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-            />
+
+          {/* Third Row */}
+
+          <div className="form-row">
+
+            <div className="form-group">
+              <label>
+                Aadhaar Number <span className="required">*</span>
+              </label>
+
+              <input
+                type="text"
+                name="adhar"
+                placeholder="Enter Aadhaar number"
+                value={adhar}
+                maxLength={12}
+                required
+                onChange={(e) =>
+                  setAdhar(e.target.value.replace(/\D/g, ""))
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label>
+                Date of Birth <span className="required">*</span>
+              </label>
+
+              <input
+                type="date"
+                name="dob"
+                value={dob}
+                required
+                onChange={(e) => setDob(e.target.value)}
+              />
+            </div>
+
           </div>
-          <div>
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+
+          {/* Fourth Row */}
+
+          <div className="form-row">
+
+            <div className="form-group">
+              <label>
+                Gender <span className="required">*</span>
+              </label>
+
+              <select
+                name="gender"
+                value={gender}
+                required
+                onChange={(e) => setGender(e.target.value)}
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
           </div>
-          <div style={{ justifyContent: "center", alignItems: "center" }}>
-            <button type="submit">ADD NEW ADMIN</button>
+
+          {/* Fifth Row */}
+
+          <div className="form-row">
+
+            <div className="form-group">
+              <label>
+                Password <span className="required">*</span>
+              </label>
+
+              <div className="password-field">
+
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter password"
+                  value={password}
+                  required
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                <button
+                  type="button"
+                  className="password-icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>
+                Confirm Password <span className="required">*</span>
+              </label>
+
+              <div className="password-field">
+
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  required
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value)
+                  }
+                />
+
+                <button
+                  type="button"
+                  className="password-icon"
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
+                >
+                  {showConfirmPassword ? (
+                    <FaEyeSlash />
+                  ) : (
+                    <FaEye />
+                  )}
+                </button>
+
+              </div>
+            </div>
+
           </div>
+
+          <div className="form-submit-wrapper">
+            <button type="submit" className="submit-btn">
+              ADD NEW ADMIN
+            </button>
+          </div>
+
         </form>
       </section>
     </section>

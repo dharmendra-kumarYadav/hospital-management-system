@@ -48,7 +48,7 @@ const MessageForm = () => {
             />
             <input
               type="text"
-              placeholder="Last Name"
+              placeholder="Last Name (optional)"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />

@@ -22,7 +22,6 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
 
   if (
     !firstName ||
-    !lastName ||
     !email ||
     !phone ||
     !adhar ||
@@ -31,18 +30,20 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
     !appointment_date ||
     !department ||
     !doctor_firstName ||
-    !doctor_lastName ||
     !address
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
-  const isConflict = await Users.find({
+  const matchingDoctors = await Users.find({
     firstName: doctor_firstName,
-    lastName: doctor_lastName,
     role: "Doctor",
     doctorDepartment: department,
   });
+
+  const isConflict = matchingDoctors.filter(
+    (doctor) => (doctor.lastName || "") === (doctor_lastName || "")
+  );
 
   if (isConflict.length === 0) {
     return next(new ErrorHandler("Doctor not found!", 400));
@@ -61,7 +62,7 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
   const patientId = req.user._id;
   const appointment = await Appointment.create({
     firstName,
-    lastName,
+    lastName: lastName || "",
     email,
     phone,
     adhar,
@@ -71,7 +72,7 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
     department,
     doctor: {
       firstName: doctor_firstName,
-      lastName: doctor_lastName,
+      lastName: doctor_lastName || "",
     },
     hasVisited,
     address,

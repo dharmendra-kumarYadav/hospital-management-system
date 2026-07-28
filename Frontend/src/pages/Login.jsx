@@ -1,3 +1,4 @@
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
 import React, { useContext, useState } from "react";
 import { toast } from "react-toastify";
@@ -9,7 +10,7 @@ const Login = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigateTo = useNavigate();
 
@@ -19,7 +20,7 @@ const Login = () => {
       await axios
         .post(
           "http://localhost:4000/api/v1/user/login",
-          { email, password, confirmPassword, role: "Patient" },
+          { email, password, role: "Patient" },
           {
             withCredentials: true,
             headers: { "Content-Type": "application/json" },
@@ -31,7 +32,6 @@ const Login = () => {
           navigateTo("/");
           setEmail("");
           setPassword("");
-          setConfirmPassword("");
         });
     } catch (error) {
       toast.error(error.response.data.message);
@@ -55,18 +55,21 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
+           <div className="password-field">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+          
+                      <span
+                        className="password-icon"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </span>
+                    </div>
           <div
             style={{
               gap: "10px",

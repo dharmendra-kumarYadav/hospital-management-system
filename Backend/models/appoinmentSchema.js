@@ -9,8 +9,14 @@ const appointmentSchema = new mongoose.Schema({
     },
     lastName: {
         type: String,
-        required: true,
-        minLength: [3, "Last Name Must Contain At least 3 Characters"],
+        trim: true,
+        default: "",
+        validate: {
+            validator: function (v) {
+                return !v || v.length >= 3;
+            },
+            message: "Last Name Must Contain At least 3 Characters if provided",
+        },
     },
     email: {
         type: String,
@@ -63,9 +69,10 @@ const appointmentSchema = new mongoose.Schema({
             type: String,
             required:true,
         },
-        lastName:{
+        lastName: {
             type: String,
-            required:true,
+            trim: true,
+            default: "",
         },
     },
     hasVisited: {

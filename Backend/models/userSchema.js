@@ -11,8 +11,14 @@ const userSchema = new mongoose.Schema({
     },
     lastName: {
         type: String,
-        required: true,
-        minLength: [3, "Last Name Must Contain At least 3 Characters"],
+        trim: true,
+        default: "",
+        validate: {
+            validator: function (v) {
+                return !v || v.length >= 3;
+            },
+            message: "Last Name Must Contain At least 3 Characters if provided",
+        },
     },
     email: {
         type: String,
@@ -50,7 +56,7 @@ const userSchema = new mongoose.Schema({
     gender: {
         type: String,
         required: true,
-        enum: ["Male", "Female"],
+        enum: ["Male", "Female", "Other"],
     },
     password: {
         type: String,
@@ -84,9 +90,25 @@ userSchema.methods.comparePassword = async function(enteredPassword) {
 };
 
 userSchema.methods.generateJsonWebToken = function () {
-    return jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
-        expiresIn: process.env.JWT_EXPIRES,
-    });
+    console.log("JWT_SECRET_KEY =", process.env.JWT_SECRET_KEY);
+    console.log("JWT_EXPIRES =", process.env.JWT_EXPIRES);
+
+    try {
+        const token = jwt.sign(
+            { id: this._id },
+            process.env.JWT_SECRET_KEY,
+            {
+                expiresIn: process.env.JWT_EXPIRES,
+            }
+        );
+
+        console.log("Generated Token:", token);
+
+        return token;
+    } catch (err) {
+        console.error("JWT ERROR:", err);
+        throw err;
+    }
 };
 
 export const Users = mongoose.model("Users", userSchema);

@@ -1,3 +1,4 @@
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
 import React, { useContext, useState } from "react";
 import { toast } from "react-toastify";
@@ -15,6 +16,10 @@ const Register = () => {
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigateTo = useNavigate();
 
@@ -33,6 +38,7 @@ const Register = () => {
             dob,
             gender,
             password,
+            confirmPassword,
             role: "Patient",
           },
           {
@@ -52,6 +58,7 @@ const Register = () => {
           setDob("");
           setGender("");
           setPassword("");
+          setConfirmPassword("");
         });
     } catch (error) {
       toast.error(error.response.data.message);
@@ -81,7 +88,7 @@ const Register = () => {
             />
             <input
               type="text"
-              placeholder="Last Name"
+              placeholder="Last Name (optional)"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />
@@ -119,13 +126,40 @@ const Register = () => {
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
+              <option value="Other">Other</option>
             </select>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+
+            <div className="password-field">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              <span
+                className="password-icon"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
+
+            <div className="password-field">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+
+              <span
+                className="password-icon"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
           </div>
           <div
             style={{

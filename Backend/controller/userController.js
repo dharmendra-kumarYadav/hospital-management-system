@@ -6,12 +6,14 @@ import cloudinary from "cloudinary";
 
 // Patient Registration
 export const patientRegister = catchAsyncErrors(async (req, res, next) => {
+  console.log(req.body);
   const {
     firstName,
     lastName,
     email,
     phone,
     password,
+    confirmPassword,
     gender,
     dob,
     adhar,
@@ -20,16 +22,19 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
 
   if (
     !firstName ||
-    !lastName ||
     !email ||
     !phone ||
     !password ||
+    !confirmPassword ||
     !gender ||
     !dob ||
     !adhar ||
     !role
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
+  }
+  if(password !== confirmPassword) {
+    return next(new ErrorHandler("Password and Confirm Password do not match!", 400));
   }
 
   let user = await Users.findOne({ email });
@@ -39,7 +44,7 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
 
   user = await Users.create({
     firstName,
-    lastName,
+    lastName: lastName || "",
     email,
     phone,
     password,
@@ -53,16 +58,15 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
 
 // User Login
 export const login = catchAsyncErrors(async (req, res, next) => {
-  const { email, password, confirmPassword, role } = req.body;
+  const { email, password, role } = req.body;
 
-  if (!email || !password || !confirmPassword || !role) {
-    return next(new ErrorHandler("Please Fill Full Form!", 400));
+  if (!email && !password || !role) {
+    return next(new ErrorHandler("Please Enter Email and Password!", 400));
   }
-
-  if (password !== confirmPassword) {
-    return next(
-      new ErrorHandler("Password and Confirm Password do not match!", 400)
-    );
+  else if (!email) {
+    return next(new ErrorHandler("Please Enter Email!", 400));
+  } else if (!password) {
+    return next(new ErrorHandler("Please Enter Password!", 400));
   }
 
   const user = await Users.findOne({ email }).select("+password");
@@ -83,19 +87,24 @@ export const login = catchAsyncErrors(async (req, res, next) => {
 });
 
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
-  const { firstName, lastName, email, phone, password, gender, dob, adhar } =
+  const { firstName, lastName, email, phone, password, gender, dob, adhar, confirmPassword } =
     req.body;
   if (
     !firstName ||
-    !lastName ||
     !email ||
     !phone ||
     !password ||
     !gender ||
     !dob ||
-    !adhar
+    !adhar ||
+    !confirmPassword
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
+  }
+  if (password !== confirmPassword) {
+    return next(
+      new ErrorHandler("Password and Confirm Password do not match!", 400)
+    );
   }
 
   const isRegistered = await Users.findOne({ email });
@@ -109,7 +118,7 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   }
   const admin = await Users.create({
     firstName,
-    lastName,
+    lastName: lastName || "",
     email,
     phone,
     password,
@@ -167,14 +176,6 @@ export const logoutPatient = catchAsyncErrors(async (req, res, next) => {
 });
 
 export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
-  if (!req.files || Object.keys(req.files).length === 0) {
-    return next(new ErrorHandler("Doctor Avatar Required!", 400));
-  }
-  const { docAvatar } = req.files;
-  const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
-  if (!allowedFormats.includes(docAvatar.mimetype)) {
-    return next(new ErrorHandler("File Format Not Supported!", 400));
-  }
   const {
     firstName,
     lastName,
@@ -184,21 +185,27 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     dob,
     gender,
     password,
+    confirmPassword,
     doctorDepartment,
   } = req.body;
+
   if (
     !firstName ||
-    !lastName ||
     !email ||
     !phone ||
     !adhar ||
     !dob ||
     !gender ||
     !password ||
-    !doctorDepartment ||
-    !docAvatar
+    !confirmPassword ||
+    !doctorDepartment
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
+  }
+  if (password !== confirmPassword) {
+    return next(
+      new ErrorHandler("Password and Confirm Password do not match!", 400)
+    );
   }
   const isRegistered = await Users.findOne({ email });
   if (isRegistered) {
@@ -206,21 +213,35 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
       new ErrorHandler("Doctor With This Email Already Exists!", 400)
     );
   }
-  const cloudinaryResponse = await cloudinary.uploader.upload(
-    docAvatar.tempFilePath
-  );
-  if (!cloudinaryResponse || cloudinaryResponse.error) {
-    console.error(
-      "Cloudinary Error:",
-      cloudinaryResponse.error || "Unknown Cloudinary error"
+
+  let docAvatarData;
+  if (req.files && req.files.docAvatar) {
+    const { docAvatar } = req.files;
+    const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowedFormats.includes(docAvatar.mimetype)) {
+      return next(new ErrorHandler("File Format Not Supported!", 400));
+    }
+    const cloudinaryResponse = await cloudinary.uploader.upload(
+      docAvatar.tempFilePath
     );
-    return next(
-      new ErrorHandler("Failed To Upload Doctor Avatar To Cloudinary", 500)
-    );
+    if (!cloudinaryResponse || cloudinaryResponse.error) {
+      console.error(
+        "Cloudinary Error:",
+        cloudinaryResponse.error || "Unknown Cloudinary error"
+      );
+      return next(
+        new ErrorHandler("Failed To Upload Doctor Avatar To Cloudinary", 500)
+      );
+    }
+    docAvatarData = {
+      public_id: cloudinaryResponse.public_id,
+      url: cloudinaryResponse.secure_url,
+    };
   }
-  const doctor = await Users.create({
+
+  const doctorPayload = {
     firstName,
-    lastName,
+    lastName: lastName || "",
     email,
     phone,
     adhar,
@@ -229,11 +250,13 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     password,
     role: "Doctor",
     doctorDepartment,
-    docAvatar: {
-      public_id: cloudinaryResponse.public_id,
-      url: cloudinaryResponse.secure_url,
-    },
-  });
+  };
+
+  if (docAvatarData) {
+    doctorPayload.docAvatar = docAvatarData;
+  }
+
+  const doctor = await Users.create(doctorPayload);
   res.status(200).json({
     success: true,
     message: "New Doctor Registered",
