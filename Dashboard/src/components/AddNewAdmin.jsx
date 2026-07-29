@@ -23,6 +23,10 @@ const AddNewAdmin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Today's date in YYYY-MM-DD, used to cap the DOB picker so future dates
+  // can't be selected in the calendar UI
+  const today = new Date().toISOString().split("T")[0];
+
   const handleAddNewAdmin = async (e) => {
     e.preventDefault();
 
@@ -186,6 +190,7 @@ const AddNewAdmin = () => {
                 type="date"
                 name="dob"
                 value={dob}
+                max={today}
                 required
                 onChange={(e) => setDob(e.target.value)}
               />

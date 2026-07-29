@@ -33,26 +33,54 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
-  if(password !== confirmPassword) {
-    return next(new ErrorHandler("Password and Confirm Password do not match!", 400));
+
+  if (password !== confirmPassword) {
+    return next(
+      new ErrorHandler("Password and Confirm Password do not match!", 400)
+    );
   }
 
-  let user = await Users.findOne({ email });
+  // --- DOB validation: cannot be a future date ---
+  const dobDate = new Date(dob);
+  if (isNaN(dobDate.getTime())) {
+    return next(new ErrorHandler("Invalid Date of Birth!", 400));
+  }
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  if (dobDate.getTime() > today.getTime()) {
+    return next(
+      new ErrorHandler("Date of Birth cannot be a future date!", 400)
+    );
+  }
+
+  // --- Email uniqueness check ---
+  let user = await Users.findOne({ email: email.trim().toLowerCase() });
   if (user) {
     return next(new ErrorHandler("User Already Registered!", 400));
+  }
+
+  // --- Adhar uniqueness check ---
+  const isAdharRegistered = await Users.findOne({ adhar: adhar.trim() });
+  if (isAdharRegistered) {
+    return next(
+      new ErrorHandler("User With This Adhar Number Already Exists!", 400)
+    );
   }
 
   user = await Users.create({
     firstName,
     lastName: lastName || "",
-    email,
+    email: email.trim().toLowerCase(),
     phone,
     password,
     gender,
     dob,
-    adhar,
+    adhar: adhar.trim(),
     role,
   });
+
   generateToken(user, "User Registered!", 200, res);
 });
 
@@ -89,6 +117,7 @@ export const login = catchAsyncErrors(async (req, res, next) => {
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   const { firstName, lastName, email, phone, password, gender, dob, adhar, confirmPassword } =
     req.body;
+
   if (
     !firstName ||
     !email ||
@@ -101,32 +130,64 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
+
   if (password !== confirmPassword) {
     return next(
       new ErrorHandler("Password and Confirm Password do not match!", 400)
     );
   }
 
-  const isRegistered = await Users.findOne({ email });
-  if (isRegistered) {
+  // --- DOB validation: cannot be a future date ---
+  const dobDate = new Date(dob);
+  if (isNaN(dobDate.getTime())) {
+    return next(new ErrorHandler("Invalid Date of Birth!", 400));
+  }
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  if (dobDate.getTime() > today.getTime()) {
+    return next(
+      new ErrorHandler("Date of Birth cannot be a future date!", 400)
+    );
+  }
+
+  // --- Email uniqueness check ---
+  const isEmailRegistered = await Users.findOne({
+    email: email.trim().toLowerCase(),
+  });
+  if (isEmailRegistered) {
     return next(
       new ErrorHandler(
-        `${isRegistered.role} with this email Already Exist!`,
+        `${isEmailRegistered.role} with this email Already Exist!`,
         400
       )
     );
   }
+
+  // --- Adhar uniqueness check ---
+  const isAdharRegistered = await Users.findOne({ adhar: adhar.trim() });
+  if (isAdharRegistered) {
+    return next(
+      new ErrorHandler(
+        `${isAdharRegistered.role} with this Adhar Number Already Exist!`,
+        400
+      )
+    );
+  }
+
   const admin = await Users.create({
     firstName,
     lastName: lastName || "",
-    email,
+    email: email.trim().toLowerCase(),
     phone,
     password,
     gender,
     dob,
-    adhar,
+    adhar: adhar.trim(),
     role: "Admin",
   });
+
   res.status(200).json({
     success: true,
     message: "New Admin Registered!",
@@ -174,7 +235,6 @@ export const logoutPatient = catchAsyncErrors(async (req, res, next) => {
       message: "Patient Logged Out successfully!",
     });
 });
-
 export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
   const {
     firstName,
@@ -189,6 +249,12 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     doctorDepartment,
   } = req.body;
 
+  console.log("Incoming doctor registration payload:", {
+    email,
+    adhar,
+    dob,
+  });
+
   if (
     !firstName ||
     !email ||
@@ -202,18 +268,53 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
+
   if (password !== confirmPassword) {
     return next(
       new ErrorHandler("Password and Confirm Password do not match!", 400)
     );
   }
-  const isRegistered = await Users.findOne({ email });
-  if (isRegistered) {
+
+  // --- DOB validation ---
+  // Expecting an ISO-style date string like "YYYY-MM-DD" from an <input type="date">
+  const dobDate = new Date(dob);
+  console.log("Parsed dobDate:", dobDate, "Now:", new Date());
+
+  if (isNaN(dobDate.getTime())) {
+    return next(new ErrorHandler("Invalid Date of Birth!", 400));
+  }
+
+  // Zero-out time on "now" so today's date itself is still allowed
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  if (dobDate.getTime() > today.getTime()) {
+    return next(
+      new ErrorHandler("Date of Birth cannot be a future date!", 400)
+    );
+  }
+
+  // --- Email uniqueness check ---
+  const isEmailRegistered = await Users.findOne({
+    email: email.trim().toLowerCase(),
+  });
+  console.log("isEmailRegistered:", isEmailRegistered);
+  if (isEmailRegistered) {
     return next(
       new ErrorHandler("Doctor With This Email Already Exists!", 400)
     );
   }
 
+  // --- Adhar uniqueness check ---
+  const isAdharRegistered = await Users.findOne({ adhar: adhar.trim() });
+  console.log("isAdharRegistered:", isAdharRegistered);
+  if (isAdharRegistered) {
+    return next(
+      new ErrorHandler("Doctor With This Adhar Number Already Exists!", 400)
+    );
+  }
+
+  // --- Doctor avatar (optional) ---
   let docAvatarData;
   if (req.files && req.files.docAvatar) {
     const { docAvatar } = req.files;
@@ -242,9 +343,9 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
   const doctorPayload = {
     firstName,
     lastName: lastName || "",
-    email,
+    email: email.trim().toLowerCase(),
     phone,
-    adhar,
+    adhar: adhar.trim(),
     dob,
     gender,
     password,

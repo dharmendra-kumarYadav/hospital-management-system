@@ -6,8 +6,6 @@ import { Context } from "../main";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 const Register = () => {
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
-
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -21,167 +19,242 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
+
   const navigateTo = useNavigate();
+
+  // Today's date in YYYY-MM-DD, used to cap the DOB picker so future dates
+  // can't even be selected in the calendar UI
+  const today = new Date().toISOString().split("T")[0];
 
   const handleRegistration = async (e) => {
     e.preventDefault();
+
     try {
-      await axios
-        .post(
-          "http://localhost:4000/api/v1/user/patient/register",
-          {
-            firstName,
-            lastName,
-            email,
-            phone,
-            adhar,
-            dob,
-            gender,
-            password,
-            confirmPassword,
-            role: "Patient",
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/user/patient/register",
+        {
+          firstName,
+          lastName,
+          email,
+          phone,
+          adhar,
+          dob,
+          gender,
+          password,
+          confirmPassword,
+          role: "Patient",
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
           },
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-          }
-        )
-        .then((res) => {
-          toast.success(res.data.message);
-          setIsAuthenticated(true);
-          navigateTo("/");
-          setFirstName("");
-          setLastName("");
-          setEmail("");
-          setPhone("");
-          setAdhar("");
-          setDob("");
-          setGender("");
-          setPassword("");
-          setConfirmPassword("");
-        });
+        }
+      );
+
+      toast.success(res.data.message);
+      setIsAuthenticated(true);
+      navigateTo("/");
+
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPhone("");
+      setAdhar("");
+      setDob("");
+      setGender("");
+      setPassword("");
+      setConfirmPassword("");
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
   if (isAuthenticated) {
-    return <Navigate to={"/"} />;
+    return <Navigate to="/" />;
   }
 
   return (
-    <>
-      <div className="container form-component register-form">
-        <h2>Sign Up</h2>
-        <p>Please Sign Up To Continue</p>
-        <p>
-          Please sign up to access hospital services and manage your
-          appointments.
-        </p>
-        <form onSubmit={handleRegistration}>
-          <div>
-            <input
-              type="text"
-              placeholder="First Name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Last Name (optional)"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Mobile Number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-          <div>
-            <input
-              type="number"
-              placeholder="Adhar"
-              value={adhar}
-              onChange={(e) => setAdhar(e.target.value)}
-            />
-            <input
-              type={"date"}
-              placeholder="Date of Birth"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-            />
-          </div>
-          <div>
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
+    <section className="container form-component register-form">
+      <img src="/logo.png" alt="logo" className="logo" />
 
-            <div className="password-field">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+      <h1 className="form-title">WELCOME TO ZEECARE</h1>
 
-              <span
-                className="password-icon"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
-            </div>
+      <p>Please Sign Up To Continue</p>
+      <p>
+        Please sign up to access hospital services and manage your
+        appointments.
+      </p>
 
-            <div className="password-field">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+      <form onSubmit={handleRegistration} autoComplete="off">
+        <div className="form-group">
+          <label>
+            First Name <span className="required">*</span>
+          </label>
+          <input
+            type="text"
+            name="firstName"
+            placeholder="Enter your first name"
+            value={firstName}
+            required
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+        </div>
 
-              <span
-                className="password-icon"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
-            </div>
-          </div>
-          <div
-            style={{
-              gap: "10px",
-              justifyContent: "flex-end",
-              flexDirection: "row",
-            }}
+        <div className="form-group">
+          <label>Last Name</label>
+          <input
+            type="text"
+            name="lastName"
+            placeholder="Enter your last name (optional)"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Email Address <span className="required">*</span>
+          </label>
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            value={email}
+            required
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Mobile Number <span className="required">*</span>
+          </label>
+          <input
+            type="number"
+            name="phone"
+            placeholder="Enter your mobile number"
+            value={phone}
+            required
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Adhar Number <span className="required">*</span>
+          </label>
+          <input
+            type="number"
+            name="adhar"
+            placeholder="Enter your Adhar number"
+            value={adhar}
+            required
+            onChange={(e) => setAdhar(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Date of Birth <span className="required">*</span>
+          </label>
+          <input
+            type="date"
+            name="dob"
+            value={dob}
+            max={today}
+            required
+            onChange={(e) => setDob(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Gender <span className="required">*</span>
+          </label>
+          <select
+            name="gender"
+            value={gender}
+            required
+            onChange={(e) => setGender(e.target.value)}
           >
-            <p style={{ marginBottom: 0 }}>Already Registered?</p>
-            <Link
-              to={"/login"}
-              style={{ textDecoration: "none", color: "#271776ca" }}
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>
+            Password <span className="required">*</span>
+          </label>
+          <div className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Enter your password"
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              className="password-icon"
+              onClick={() => setShowPassword(!showPassword)}
             >
-              Login Now
-            </Link>
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
-          <div style={{ justifyContent: "center", alignItems: "center" }}>
-            <button type="submit">Register</button>
+        </div>
+
+        <div className="form-group">
+          <label>
+            Confirm Password <span className="required">*</span>
+          </label>
+          <div className="password-field">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              required
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              className="password-icon"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
-        </form>
-      </div>
-    </>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            justifyContent: "flex-end",
+          }}
+        >
+          <p style={{ marginBottom: 0 }}>Already Registered?</p>
+          <Link
+            to={"/login"}
+            style={{ textDecoration: "none", color: "#271776ca" }}
+          >
+            Login Now
+          </Link>
+        </div>
+
+        <div className="form-submit-wrapper">
+          <button type="submit" className="submit-btn">
+            REGISTER
+          </button>
+        </div>
+      </form>
+    </section>
   );
 };
 
