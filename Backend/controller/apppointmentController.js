@@ -35,6 +35,42 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
+  // --- Gender validation (accepts Male, Female, Other) ---
+  const allowedGenders = ["Male", "Female", "Other"];
+  if (!allowedGenders.includes(gender)) {
+    return next(new ErrorHandler("Invalid Gender Selected!", 400));
+  }
+
+  // --- DOB validation: cannot be a future date ---
+  const dobDate = new Date(dob);
+  if (isNaN(dobDate.getTime())) {
+    return next(new ErrorHandler("Invalid Date of Birth!", 400));
+  }
+
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  if (dobDate.getTime() > today.getTime()) {
+    return next(
+      new ErrorHandler("Date of Birth cannot be a future date!", 400)
+    );
+  }
+
+  // --- Appointment date validation: cannot be a past date ---
+  const appointmentDateObj = new Date(appointment_date);
+  if (isNaN(appointmentDateObj.getTime())) {
+    return next(new ErrorHandler("Invalid Appointment Date!", 400));
+  }
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  if (appointmentDateObj.getTime() < startOfToday.getTime()) {
+    return next(
+      new ErrorHandler("Appointment Date cannot be a past date!", 400)
+    );
+  }
+
   const matchingDoctors = await Users.find({
     firstName: doctor_firstName,
     role: "Doctor",

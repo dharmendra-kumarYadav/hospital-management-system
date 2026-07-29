@@ -6,91 +6,118 @@ import { Context } from "../main";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 
 const Login = () => {
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
 
   const navigateTo = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
     try {
-      await axios
-        .post(
-          "http://localhost:4000/api/v1/user/login",
-          { email, password, role: "Patient" },
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-          }
-        )
-        .then((res) => {
-          toast.success(res.data.message);
-          setIsAuthenticated(true);
-          navigateTo("/");
-          setEmail("");
-          setPassword("");
-        });
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/user/login",
+        {
+          email,
+          password,
+          role: "Patient",
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success(res.data.message);
+      setIsAuthenticated(true);
+      navigateTo("/");
+
+      setEmail("");
+      setPassword("");
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
   if (isAuthenticated) {
-    return <Navigate to={"/"} />;
+    return <Navigate to="/" />;
   }
 
   return (
-    <>
-      <div className="container form-component login-form">
-        <h2>Sign In</h2>
-        <p>Please Login To Continue</p>
-        <p>Login to Send Message and Get Appointment</p>
-        <form onSubmit={handleLogin}>
+    <section className="container form-component login-form">
+      <img src="/logo.png" alt="logo" className="logo" />
+
+      <h1 className="form-title">WELCOME TO ZEECARE</h1>
+
+      <p>Please Login To Continue</p>
+      <p>Login to Send Message and Get Appointment</p>
+
+      <form onSubmit={handleLogin} autoComplete="off">
+        <div className="form-group">
+          <label>
+            Email Address <span className="required">*</span>
+          </label>
           <input
-            type="text"
-            placeholder="Email"
+            type="email"
+            name="email"
+            placeholder="Enter your email"
             value={email}
+            required
             onChange={(e) => setEmail(e.target.value)}
           />
-           <div className="password-field">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-          
-                      <span
-                        className="password-icon"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <FaEyeSlash /> : <FaEye />}
-                      </span>
-                    </div>
-          <div
-            style={{
-              gap: "10px",
-              justifyContent: "flex-end",
-              flexDirection: "row",
-            }}
-          >
-            <p style={{ marginBottom: 0 }}>Not Registered?</p>
-            <Link
-              to={"/register"}
-              style={{ textDecoration: "none", color: "#271776ca" }}
+        </div>
+
+        <div className="form-group">
+          <label>
+            Password <span className="required">*</span>
+          </label>
+          <div className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Enter your password"
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              className="password-icon"
+              onClick={() => setShowPassword(!showPassword)}
             >
-              Register Now
-            </Link>
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
-          <div style={{ justifyContent: "center", alignItems: "center" }}>
-            <button type="submit">Login</button>
-          </div>
-        </form>
-      </div>
-    </>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            justifyContent: "flex-end",
+          }}
+        >
+          <p style={{ marginBottom: 0 }}>Not Registered?</p>
+          <Link
+            to={"/register"}
+            style={{ textDecoration: "none", color: "#271776ca" }}
+          >
+            Register Now
+          </Link>
+        </div>
+
+        <div className="form-submit-wrapper">
+          <button type="submit" className="submit-btn">
+            LOGIN
+          </button>
+        </div>
+      </form>
+    </section>
   );
 };
 

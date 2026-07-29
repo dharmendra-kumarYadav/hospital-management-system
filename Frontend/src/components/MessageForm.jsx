@@ -11,75 +11,118 @@ const MessageForm = () => {
 
   const handleMessage = async (e) => {
     e.preventDefault();
+
     try {
-      await axios
-        .post(
-          "http://localhost:4000/api/v1/message/send",
-          { firstName, lastName, email, phone, message },
-          {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-          }
-        )
-        .then((res) => {
-          toast.success(res.data.message);
-          setFirstName("");
-          setLastName("");
-          setEmail("");
-          setPhone("");
-          setMessage("");
-        });
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/message/send",
+        {
+          firstName,
+          lastName,
+          email,
+          phone,
+          message,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success(res.data.message);
+
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPhone("");
+      setMessage("");
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
   return (
-    <>
-      <div className="container form-component message-form">
-        <h2>Send Us A Message</h2>
-        <form onSubmit={handleMessage}>
-          <div>
-            <input
-              type="text"
-              placeholder="First Name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Last Name (optional)"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-          <div>
-            <input
-              type="text"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Mobile Number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
+    <section className="container form-component message-form">
+      <h1 className="form-title">Send Us A Message</h1>
+
+      <form onSubmit={handleMessage} autoComplete="off">
+        <div className="form-group">
+          <label>
+            First Name <span className="required">*</span>
+          </label>
+          <input
+            type="text"
+            name="firstName"
+            placeholder="Enter your first name"
+            value={firstName}
+            required
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Last Name</label>
+          <input
+            type="text"
+            name="lastName"
+            placeholder="Enter your last name (optional)"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Email Address <span className="required">*</span>
+          </label>
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            value={email}
+            required
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Mobile Number <span className="required">*</span>
+          </label>
+          <input
+            type="number"
+            name="phone"
+            placeholder="Enter your mobile number"
+            value={phone}
+            required
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>
+            Message <span className="required">*</span>
+          </label>
           <textarea
+            name="message"
             rows={7}
-            placeholder="Message"
+            placeholder="Enter your message"
             value={message}
+            required
             onChange={(e) => setMessage(e.target.value)}
           />
-          <div style={{ justifyContent: "center", alignItems: "center" }}>
-            <button type="submit">Send</button>
-          </div>
-        </form>
-        <img src="/Vector.png" alt="vector" />
-      </div>
-    </>
+        </div>
+
+        <div className="form-submit-wrapper">
+          <button type="submit" className="submit-btn">
+            SEND
+          </button>
+        </div>
+      </form>
+
+      <img src="/Vector.png" alt="vector" className="form-vector" />
+    </section>
   );
 };
 
