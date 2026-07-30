@@ -156,14 +156,17 @@ h6 {
     }
   }
 }
+
+/* ===========================
+   FORM COMPONENT (matches dashboard)
+=========================== */
 .form-component {
   padding-top: 40px;
   padding-bottom: 60px;
-}
-.form-component h2 {
-  color: gray;
-  letter-spacing: 4px;
-  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 .form-component h4 {
   color: gray;
@@ -174,41 +177,14 @@ h6 {
   max-width: 750px;
   color: gray;
   margin-bottom: 20px;
+  text-align: center;
 }
 .form-component form {
   display: flex;
   flex-direction: column;
-  gap: 30px;
-}
-.form-component form div {
-  display: flex;
-  gap: 30px;
-}
-.form-component form input,
-.form-component form select,
-.form-component form textarea {
-  flex: 1;
-  font-size: 24px;
-  padding: 10px 10px 10px 40px;
-  border-radius: 7px;
-  border: 1px solid gray;
-}
-.form-component button {
-  padding: 10px 35px;
-  color: #fff;
-  font-weight: 700;
-  /* change */
-  cursor: pointer;
-  width: auto;
-  border: none;
-  border-radius: 8px;
-  font-size: 24px;
-  margin-bottom: 30px;
-  background: linear-gradient(140deg, #9083d5, #271776ca);
-}
-
-.form-component button:hover{
-  background-color: #8570ed;
+  gap: 0;
+  width: 550px;
+  max-width: 100%;
 }
 .form-component .wrapper {
   display: flex;
@@ -225,46 +201,146 @@ h6 {
 .form-component .wrapper .banner:last-child img {
   max-width: 450px;
 }
-.login-form {
-  margin: 100px auto 20px auto;
-  max-width: 800px;
-  text-align: center;
-}
-.register-form {
-  max-width: 1200px;
+.login-form,
+.register-form,
+.message-form,
+.appointment-form {
   margin: 100px auto 20px auto;
 }
-.login-form h2 {
-  color: #000;
+.login-form form {
+  max-width: 550px;
 }
-.register-form h2 {
-  color: #000;
-}
-@media (max-width: 1110px) {
-  .appointment-form form div:nth-child(4) {
-    flex-direction: column;
-  }
-  .appointment-form form div:nth-child(5) {
-    flex-direction: column;
-  }
+.register-form form,
+.appointment-form form {
+  width: 100%;
+  max-width: 900px;
 }
 @media (max-width: 888px) {
   .form-component {
     padding-top: 30px;
     padding-bottom: 30px;
   }
-  .form-component form div {
+}
+@media (max-width: 600px) {
+  .form-component form {
+    width: 100%;
+  }
+}
+
+/* ===========================
+   COMMON FORM STYLING (from dashboard)
+=========================== */
+.form-title {
+  font-size: 1.75rem;
+  color: #111;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.form-group label {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 3px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  height: 54px;
+  padding: 0 16px;
+  font-size: 17px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  transition: all 0.25s ease;
+}
+
+.form-group textarea {
+  height: auto;
+  padding: 14px 16px;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #6d28d9;
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.15);
+}
+
+/* ===========================
+   ROWS
+=========================== */
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+@media (max-width: 768px) {
+  .form-row {
     flex-direction: column;
+    gap: 0;
   }
 }
-@media (max-width: 667px) {
-  .form-component form input,
-  .form-component form select,
-  .form-component form textarea {
-    font-size: 20px;
-    padding: 10px;
+
+/* ===========================
+   BUTTON
+=========================== */
+.form-submit-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+.submit-btn {
+  width: 320px;
+  max-width: 100%;
+  height: 55px;
+  margin: 0;
+  display: block;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #8b7ae6, #5643b5);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(86, 67, 181, 0.3);
+}
+
+@media (max-width: 900px) {
+  .submit-btn {
+    width: 100%;
   }
 }
+
 .biography {
   display: flex;
   gap: 50px;
@@ -297,11 +373,6 @@ h6 {
   }
 }
 .message-form {
-  position: relative;
-}
-.message-form h2 {
-  text-align: center;
-  color: #000;
   position: relative;
 }
 .message-form img {
@@ -611,6 +682,10 @@ input[type="time"]:before {
 footer .logo-img{
   width: 100%;
 }
+
+/* ===========================
+   PASSWORD FIELD
+=========================== */
 .password-field {
   position: relative;
   width: 100%;
@@ -618,7 +693,7 @@ footer .logo-img{
 
 .password-field input {
   width: 100%;
-  padding-right: 45px;
+  padding-right: 55px;
   box-sizing: border-box;
 }
 
@@ -630,15 +705,15 @@ footer .logo-img{
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #666;
-  font-size: 18px;
+  color: #6b7280;
+  font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  z-index: 1000;
+  z-index: 10;
 }
 
 .password-icon:hover {
-  color: #000;
+  color: #6d28d9;
 }

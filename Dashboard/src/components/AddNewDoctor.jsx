@@ -40,6 +40,10 @@ const AddNewDoctor = () => {
     "ENT",
   ];
 
+  // Today's date in YYYY-MM-DD, used to cap the DOB picker so future dates
+  // can't be selected in the calendar UI
+  const today = new Date().toISOString().split("T")[0];
+
   const handleAvatar = (e) => {
     const file = e.target.files[0];
 
@@ -250,6 +254,7 @@ const AddNewDoctor = () => {
                     type="date"
                     name="dob"
                     value={dob}
+                    max={today}
                     required
                     onChange={(e) => setDob(e.target.value)}
                   />

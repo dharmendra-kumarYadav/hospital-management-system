@@ -210,6 +210,7 @@ const AddNewAdmin = () => {
                 type="date"
                 name="dob"
                 value={dob}
+                max={today}
                 required
                 onChange={(e) => setDob(e.target.value)}
               />

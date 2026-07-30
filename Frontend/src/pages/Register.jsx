@@ -196,6 +196,13 @@ const Register = () => {
               required
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             />
+            <button
+              type="button"
+              className="password-icon"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
         )}
 

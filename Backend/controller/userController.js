@@ -423,7 +423,6 @@ export const logoutPatient = catchAsyncErrors(async (req, res, next) => {
       message: "Patient Logged Out successfully!",
     });
 });
-
 export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
   const {
     firstName,
@@ -438,6 +437,12 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     doctorDepartment,
     otp,
   } = req.body;
+
+  console.log("Incoming doctor registration payload:", {
+    email,
+    adhar,
+    dob,
+  });
 
   if (
     !firstName ||

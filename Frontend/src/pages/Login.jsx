@@ -7,11 +7,11 @@ import { Link, useNavigate, Navigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
 const Login = () => {
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
 
   const navigateTo = useNavigate();
 
