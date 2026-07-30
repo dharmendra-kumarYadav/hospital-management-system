@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const AppointmentForm = () => {
+  const navigateTo = useNavigate();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,6 +20,12 @@ const AppointmentForm = () => {
   const [address, setAddress] = useState("");
   const [hasVisited, setHasVisited] = useState(false);
 
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const [doctors, setDoctors] = useState([]);
+
   const departmentsArray = [
     "Pediatrics",
     "Orthopedics",
@@ -29,23 +37,60 @@ const AppointmentForm = () => {
     "Dermatology",
     "ENT",
   ];
-  const navigateTo = useNavigate();
-  const [doctors, setDoctors] = useState([]);
+
+  // Send OTP
+  const sendOtp = async () => {
+    if (!email) {
+      return toast.error("Please enter your email first.");
+    }
+
+    try {
+      setSendingOtp(true);
+
+      const { data } = await axios.post(
+        "http://localhost:4000/api/v1/user/otp/send",
+        { email },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success(data.message);
+      setOtpSent(true);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  // Fetch Doctors
   useEffect(() => {
     const fetchDoctors = async () => {
-      const { data } = await axios.get(
-        "http://localhost:4000/api/v1/user/doctors",
-        { withCredentials: true }
-      );
-      setDoctors(data.doctors);
-      console.log(data.doctors);
+      try {
+        const { data } = await axios.get(
+          "http://localhost:4000/api/v1/user/doctors",
+          {
+            withCredentials: true,
+          }
+        );
+
+        setDoctors(data.doctors);
+      } catch (error) {
+        toast.error("Unable to fetch doctors.");
+      }
     };
+
     fetchDoctors();
   }, []);
+
+  // Book Appointment
   const handleAppointment = async (e) => {
     e.preventDefault();
+
     try {
-      const hasVisitedBool = Boolean(hasVisited);
       const { data } = await axios.post(
         "http://localhost:4000/api/v1/appointment/post",
         {
@@ -60,149 +105,213 @@ const AppointmentForm = () => {
           department,
           doctor_firstName: doctorFirstName,
           doctor_lastName: doctorLastName,
-          hasVisited: hasVisitedBool,
+          hasVisited,
           address,
+          otp,
         },
         {
           withCredentials: true,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
       );
+
       toast.success(data.message);
+
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPhone("");
+      setAdhar("");
+      setDob("");
+      setGender("");
+      setAppointmentDate("");
+      setDepartment("");
+      setDoctorFirstName("");
+      setDoctorLastName("");
+      setAddress("");
+      setHasVisited(false);
+
+      setOtp("");
+      setOtpSent(false);
+
       navigateTo("/");
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
   return (
-    <>
-      <div className="container form-component appointment-form">
-        <h2>Appointment</h2>
-        <form onSubmit={handleAppointment}>
-          <div>
+    <div className="container form-component appointment-form">
+      <h2>Book an Appointment</h2>
+
+      <form onSubmit={handleAppointment} autoComplete="off">
+        {/* First Row */}
+        <div className="form-row">
+          <div className="form-group">
+            <label>
+              First Name <span className="required">*</span>
+            </label>
+
             <input
               type="text"
-              placeholder="First Name"
+              placeholder="Enter first name"
               value={firstName}
+              required
               onChange={(e) => setFirstName(e.target.value)}
             />
+          </div>
+
+          <div className="form-group">
+            <label>Last Name</label>
+
             <input
               type="text"
-              placeholder="Last Name (optional)"
+              placeholder="Enter last name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />
           </div>
-          <div>
+        </div>
+
+        {/* Second Row */}
+        <div className="form-row">
+          <div className="form-group">
+            <label>
+              Email Address <span className="required">*</span>
+            </label>
+
+            <div className="otp-input-group">
+              <input
+                type="email"
+                placeholder="Enter email address"
+                value={email}
+                required
+                disabled={otpSent}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setOtp("");
+                  setOtpSent(false);
+                }}
+              />
+
+              <button
+                type="button"
+                className="otp-btn"
+                onClick={sendOtp}
+                disabled={otpSent || sendingOtp}
+              >
+                {sendingOtp ? "Sending..." : otpSent ? "OTP Sent" : "Send OTP"}
+              </button>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>
+              OTP <span className="required">*</span>
+            </label>
+
             <input
               type="text"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Mobile Number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Enter OTP"
+              value={otp}
+              required
+              maxLength={6}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             />
           </div>
-          <div>
-            <input
-              type="number"
-              placeholder="Adhar"
-              value={adhar}
-              onChange={(e) => setAdhar(e.target.value)}
-            />
-            <input
-              type="date"
-              placeholder="Date of Birth"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-            />
-          </div>
-          <div>
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              
-            </select>
-            <input
-              type="date"
-              placeholder="Appointment Date"
-              value={appointmentDate}
-              onChange={(e) => setAppointmentDate(e.target.value)}
-            />REGISTER NEW DOCTOR
-          </div>
-          <div>
+        </div>
+
+        {/* Department + Doctor Row */}
+        <div className="form-row">
+          <div className="form-group">
+            <label>
+              Department <span className="required">*</span>
+            </label>
+
             <select
               value={department}
+              required
               onChange={(e) => {
                 setDepartment(e.target.value);
                 setDoctorFirstName("");
                 setDoctorLastName("");
               }}
             >
-              <option>Select Doctor</option>
-              {departmentsArray.map((depart, index) => {
-                return (
-                  <option value={depart} key={index}>
-                    {depart}
-                  </option>
-                );
-              })}
+              <option value="">Select Department</option>
+              {departmentsArray.map((dept, index) => (
+                <option value={dept} key={index}>
+                  {dept}
+                </option>
+              ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label>
+              Doctor <span className="required">*</span>
+            </label>
+
             <select
               value={`${doctorFirstName} ${doctorLastName}`}
-              onChange={(e) => {
-                const [firstName, lastName] = e.target.value.split(" ");
-                setDoctorFirstName(firstName);
-                setDoctorLastName(lastName);
-              }}
+              required
               disabled={!department}
+              onChange={(e) => {
+                const [selectedFirstName, ...selectedLastName] =
+                  e.target.value.split(" ");
+                setDoctorFirstName(selectedFirstName);
+                setDoctorLastName(selectedLastName.join(" "));
+              }}
             >
               <option value="">Select Doctor</option>
+
               {doctors
                 .filter((doctor) => doctor.doctorDepartment === department)
-                .map((doctor, index) => {
-                  return (
-                    <option
-                      value={`${doctor.firstName} ${doctor.lastName}`}
-                      key={index}
-                    >
-                      {doctor.firstName} {doctor.lastName}
-                    </option>
-                  );
-                })}
+                .map((doctor) => (
+                  <option
+                    key={doctor._id}
+                    value={`${doctor.firstName} ${doctor.lastName}`}
+                  >
+                    Dr. {doctor.firstName} {doctor.lastName}
+                  </option>
+                ))}
             </select>
           </div>
+        </div>
+
+        {/* Address */}
+        <div className="form-group">
+          <label>
+            Address <span className="required">*</span>
+          </label>
+
           <textarea
-            rows="10"
+            rows={5}
+            placeholder="Enter your complete address"
             value={address}
+            required
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="Address"
           />
-          <div
-            style={{
-              gap: "10px",
-              justifyContent: "flex-end",
-              flexDirection: "row",
-            }}
-          >
-            <p style={{ marginBottom: 0 }}>Have you visited before?</p>
-            <input
-              type="checkbox"
-              checked={hasVisited}
-              onChange={(e) => setHasVisited(e.target.checked)}
-              style={{ flex: "none", width: "25px" }}
-            />
-          </div>
-          <button style={{ margin: "0 auto" }}>GET APPOINTMENT</button>
-        </form>
-      </div>
-    </>
+        </div>
+
+        {/* Previous Visit */}
+        <div className="checkbox-group">
+          <input
+            type="checkbox"
+            checked={hasVisited}
+            onChange={(e) => setHasVisited(e.target.checked)}
+          />
+
+          <label>Have you visited before?</label>
+        </div>
+
+        {/* Submit */}
+        <button type="submit" className="submit-btn">
+          GET APPOINTMENT
+        </button>
+      </form>
+    </div>
   );
 };
 

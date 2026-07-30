@@ -19,9 +19,32 @@ const AddNewAdmin = () => {
   const [gender, setGender] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [otp, setOtp] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleSendOtp = async () => {
+
+  if (!email) {
+    toast.error("Please enter Email Address first.");
+    return;
+  }
+
+  try {
+    const { data } = await axios.post(
+      "http://localhost:4000/api/v1/user/otp/send",
+      { email }
+    );
+
+    toast.success(data.message);
+
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || "Failed to send OTP"
+    );
+  }
+};
 
   const handleAddNewAdmin = async (e) => {
     e.preventDefault();
@@ -42,6 +65,7 @@ const AddNewAdmin = () => {
           adhar,
           dob,
           gender,
+          otp,
           password,
           confirmPassword,
         },
@@ -64,7 +88,7 @@ const AddNewAdmin = () => {
       setGender("");
       setPassword("");
       setConfirmPassword("");
-
+      setOtp("");
       navigateTo("/");
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
@@ -216,6 +240,35 @@ const AddNewAdmin = () => {
             </div>
 
           </div>
+
+          <div className="form-row">
+
+  <div className="form-group otp-group">
+    <label>
+      Verification OTP <span className="required">*</span>
+    </label>
+
+    <input
+      type="text"
+      placeholder="Enter OTP"
+      value={otp}
+      maxLength={6}
+      required
+      onChange={(e) =>
+        setOtp(e.target.value.replace(/\D/g, ""))
+      }
+    />
+  </div>
+
+  <button
+    type="button"
+    className="otp-btn"
+    onClick={handleSendOtp}
+  >
+    Send OTP
+  </button>
+
+</div>
 
           {/* Fifth Row */}
 
