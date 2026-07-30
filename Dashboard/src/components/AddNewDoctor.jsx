@@ -24,6 +24,8 @@ const AddNewDoctor = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [otp, setOtp] = useState("");
+
   const navigateTo = useNavigate();
 
   const departmentsArray = [
@@ -55,6 +57,27 @@ const AddNewDoctor = () => {
       setDocAvatar(file);
     };
   };
+  const handleSendOtp = async () => {
+
+  if (!email) {
+    toast.error("Please enter Email Address first.");
+    return;
+  }
+
+  try {
+    const { data } = await axios.post(
+      "http://localhost:4000/api/v1/user/otp/send",
+      { email }
+    );
+
+    toast.success(data.message);
+
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || "Failed to send OTP"
+    );
+  }
+};
 
   const handleAddNewDoctor = async (e) => {
     e.preventDefault();
@@ -77,6 +100,7 @@ const AddNewDoctor = () => {
       formData.append("password", password);
       formData.append("confirmPassword", confirmPassword);
       formData.append("doctorDepartment", doctorDepartment);
+      formData.append("otp", otp);
       if (docAvatar) {
         formData.append("docAvatar", docAvatar);
       }
@@ -106,6 +130,7 @@ const AddNewDoctor = () => {
       setPassword("");
       setConfirmPassword("");
       setDoctorDepartment("");
+      setOtp("");
       setDocAvatar("");
       setDocAvatarPreview("");
     } catch (error) {
@@ -274,6 +299,39 @@ const AddNewDoctor = () => {
                 </div>
               </div>
 
+              <div className="form-row">
+
+  
+
+</div>
+<div className="form-row">
+
+  <div className="form-group otp-group">
+    <label>
+      Verification OTP <span className="required">*</span>
+    </label>
+
+    <input
+      type="text"
+      placeholder="Enter OTP"
+      value={otp}
+      maxLength={6}
+      required
+      onChange={(e) =>
+        setOtp(e.target.value.replace(/\D/g, ""))
+      }
+    />
+  </div>
+
+  <button
+    type="button"
+    className="otp-btn"
+    onClick={handleSendOtp}
+  >
+    Send OTP
+  </button>
+
+</div>
               <div className="form-row">
                 <div className="form-group">
                   <label>

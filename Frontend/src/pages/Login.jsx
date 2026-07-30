@@ -4,6 +4,7 @@ import React, { useContext, useState } from "react";
 import { toast } from "react-toastify";
 import { Context } from "../main";
 import { Link, useNavigate, Navigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -39,6 +40,30 @@ const Login = () => {
 
       setEmail("");
       setPassword("");
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+    }
+  };
+
+  const handleGoogleLogin = async (credentialResponse) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:4000/api/v1/user/google-login",
+        {
+          credential: credentialResponse.credential,
+          role: "Patient",
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success(res.data.message);
+      setIsAuthenticated(true);
+      navigateTo("/");
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
     }
@@ -117,6 +142,26 @@ const Login = () => {
           </button>
         </div>
       </form>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          margin: "20px 0",
+        }}
+      >
+        <div style={{ flex: 1, height: "1px", background: "#d1d5db" }} />
+        <span style={{ color: "#6b7280", fontSize: "14px" }}>OR</span>
+        <div style={{ flex: 1, height: "1px", background: "#d1d5db" }} />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <GoogleLogin
+          onSuccess={handleGoogleLogin}
+          onError={() => toast.error("Google Login Failed!")}
+        />
+      </div>
     </section>
   );
 };

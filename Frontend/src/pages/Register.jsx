@@ -19,13 +19,52 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const { isAuthenticated, setIsAuthenticated } = useContext(Context);
 
   const navigateTo = useNavigate();
 
-  // Today's date in YYYY-MM-DD, used to cap the DOB picker so future dates
-  // can't even be selected in the calendar UI
+  // Today's date in YYYY-MM-DD, used to cap the DOB picker
   const today = new Date().toISOString().split("T")[0];
+
+  const startCooldown = () => {
+    setResendCooldown(60);
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    if (!email) {
+      toast.error("Please enter your email first!");
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      const { data } = await axios.post(
+        "http://localhost:4000/api/v1/user/otp/send",
+        { email },
+        { withCredentials: true }
+      );
+      toast.success(data.message);
+      setOtpSent(true);
+      startCooldown();
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
 
   const handleRegistration = async (e) => {
     e.preventDefault();
@@ -43,6 +82,7 @@ const Register = () => {
           gender,
           password,
           confirmPassword,
+          otp,
           role: "Patient",
         },
         {
@@ -66,6 +106,8 @@ const Register = () => {
       setGender("");
       setPassword("");
       setConfirmPassword("");
+      setOtp("");
+      setOtpSent(false);
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
     }
@@ -117,15 +159,52 @@ const Register = () => {
           <label>
             Email Address <span className="required">*</span>
           </label>
-          <input
-            type="email"
-            name="email"
-            placeholder="Enter your email"
-            value={email}
-            required
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div style={{ display: "flex", gap: "10px" }}>
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              value={email}
+              required
+              disabled={otpSent}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button
+              type="button"
+              className="submit-btn"
+              style={{ width: "auto", padding: "0 20px", height: "54px" }}
+              disabled={sendingOtp || resendCooldown > 0}
+              onClick={handleSendOtp}
+            >
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Send OTP"}
+            </button>
+          </div>
         </div>
+
+        {otpSent && (
+          <div className="form-group">
+            <label>
+              Enter OTP <span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              name="otp"
+              placeholder="Enter the 6-digit code sent to your email"
+              value={otp}
+              maxLength={6}
+              required
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+            />
+            <button
+              type="button"
+              className="password-icon"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
+        )}
 
         <div className="form-group">
           <label>
@@ -249,7 +328,11 @@ const Register = () => {
         </div>
 
         <div className="form-submit-wrapper">
-          <button type="submit" className="submit-btn">
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={!otpSent}
+          >
             REGISTER
           </button>
         </div>

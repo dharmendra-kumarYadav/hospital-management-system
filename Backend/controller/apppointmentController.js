@@ -2,6 +2,8 @@ import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
 import ErrorHandler from "../middlewares/errorMiddleware.js";
 import { Appointment } from "../models/appoinmentSchema.js";
 import { Users } from "../models/userSchema.js";
+import bcrypt from "bcrypt";
+import { Otp } from "../models/otpSchema.js";
 
 export const postAppointment = catchAsyncErrors(async (req, res, next) => {
   const {
@@ -18,7 +20,12 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
     doctor_lastName,
     hasVisited,
     address,
+    otp,
   } = req.body;
+
+  // ==========================
+  // Required Fields
+  // ==========================
 
   if (
     !firstName ||
@@ -30,46 +37,63 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
     !appointment_date ||
     !department ||
     !doctor_firstName ||
-    !address
+    !address ||
+    !otp
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
-  // --- Gender validation (accepts Male, Female, Other) ---
-  const allowedGenders = ["Male", "Female", "Other"];
-  if (!allowedGenders.includes(gender)) {
-    return next(new ErrorHandler("Invalid Gender Selected!", 400));
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // ==========================
+  // Phone Validation
+  // ==========================
+
+  if (phone.trim().length !== 10) {
+    return next(
+      new ErrorHandler(
+        "Mobile Number must contain exactly 10 digits!",
+        400
+      )
+    );
   }
 
-  // --- DOB validation: cannot be a future date ---
+  // ==========================
+  // Aadhaar Validation
+  // ==========================
+
+  if (adhar.trim().length !== 12) {
+    return next(
+      new ErrorHandler(
+        "Aadhaar Number must contain exactly 12 digits!",
+        400
+      )
+    );
+  }
+
+  // ==========================
+  // DOB Validation
+  // ==========================
+
   const dobDate = new Date(dob);
+
   if (isNaN(dobDate.getTime())) {
     return next(new ErrorHandler("Invalid Date of Birth!", 400));
   }
 
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
+  // ==========================
+  // Appointment Date Validation
+  // ==========================
 
-  if (dobDate.getTime() > today.getTime()) {
-    return next(
-      new ErrorHandler("Date of Birth cannot be a future date!", 400)
-    );
-  }
+  const appointmentDate = new Date(appointment_date);
 
-  // --- Appointment date validation: cannot be a past date ---
-  const appointmentDateObj = new Date(appointment_date);
-  if (isNaN(appointmentDateObj.getTime())) {
+  if (isNaN(appointmentDate.getTime())) {
     return next(new ErrorHandler("Invalid Appointment Date!", 400));
   }
 
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  if (appointmentDateObj.getTime() < startOfToday.getTime()) {
-    return next(
-      new ErrorHandler("Appointment Date cannot be a past date!", 400)
-    );
-  }
+  // ==========================
+  // Doctor Validation
+  // ==========================
 
   const matchingDoctors = await Users.find({
     firstName: doctor_firstName,
@@ -78,7 +102,8 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
   });
 
   const isConflict = matchingDoctors.filter(
-    (doctor) => (doctor.lastName || "") === (doctor_lastName || "")
+    (doctor) =>
+      (doctor.lastName || "") === (doctor_lastName || "")
   );
 
   if (isConflict.length === 0) {
@@ -88,20 +113,53 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
   if (isConflict.length > 1) {
     return next(
       new ErrorHandler(
-        "Doctor Conflict Please Contact Through Email or Phone!",
+        "Doctor Conflict. Please Contact Through Email or Phone!",
         400
       )
     );
   }
 
+  // ==========================
+  // OTP Verification
+  // ==========================
+
+  const otpRecord = await Otp.findOne({
+    email: normalizedEmail,
+  }).sort({
+    createdAt: -1,
+  });
+
+  if (!otpRecord) {
+    return next(
+      new ErrorHandler(
+        "OTP expired or not requested. Please request a new OTP.",
+        400
+      )
+    );
+  }
+
+  const isOtpValid = await bcrypt.compare(
+    otp,
+    otpRecord.otp
+  );
+
+  if (!isOtpValid) {
+    return next(new ErrorHandler("Invalid OTP!", 400));
+  }
+
+  // ==========================
+  // Create Appointment
+  // ==========================
+
   const doctorId = isConflict[0]._id;
   const patientId = req.user._id;
+
   const appointment = await Appointment.create({
     firstName,
     lastName: lastName || "",
-    email,
+    email: normalizedEmail,
     phone,
-    adhar,
+    adhar: adhar.trim(),
     dob,
     gender,
     appointment_date,
@@ -116,9 +174,14 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
     patientId,
   });
 
+  // Consume OTP only after successful appointment booking
+  await Otp.deleteMany({
+    email: normalizedEmail,
+  });
+
   res.status(200).json({
     success: true,
-    Message: "Appointment send successfully!",
+    message: "Appointment booked successfully!",
     appointment,
   });
 });

@@ -3,10 +3,12 @@ import ErrorHandler from "../middlewares/errorMiddleware.js";
 import { Users } from "../models/userSchema.js";
 import { generateToken } from "../utils/jwtToken.js";
 import cloudinary from "cloudinary";
+import bcrypt from "bcrypt";
+import { Otp } from "../models/otpSchema.js";
+import { OAuth2Client } from "google-auth-library";
 
 // Patient Registration
 export const patientRegister = catchAsyncErrors(async (req, res, next) => {
-  console.log(req.body);
   const {
     firstName,
     lastName,
@@ -18,8 +20,10 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
     dob,
     adhar,
     role,
+    otp,
   } = req.body;
 
+  // Required fields
   if (
     !firstName ||
     !email ||
@@ -29,19 +33,24 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
     !gender ||
     !dob ||
     !adhar ||
-    !role
+    !role ||
+    !otp
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
+  // Password validation
   if (password !== confirmPassword) {
     return next(
       new ErrorHandler("Password and Confirm Password do not match!", 400)
     );
   }
 
-  // --- DOB validation: cannot be a future date ---
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // DOB validation
   const dobDate = new Date(dob);
+
   if (isNaN(dobDate.getTime())) {
     return next(new ErrorHandler("Invalid Date of Birth!", 400));
   }
@@ -55,33 +64,63 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  // --- Email uniqueness check ---
-  let user = await Users.findOne({ email: email.trim().toLowerCase() });
+  // Check existing email
+  const user = await Users.findOne({ email: normalizedEmail });
+
   if (user) {
     return next(new ErrorHandler("User Already Registered!", 400));
   }
 
-  // --- Adhar uniqueness check ---
-  const isAdharRegistered = await Users.findOne({ adhar: adhar.trim() });
+  // Check existing Aadhaar
+  const isAdharRegistered = await Users.findOne({
+    adhar: adhar.trim(),
+  });
+
   if (isAdharRegistered) {
     return next(
-      new ErrorHandler("User With This Adhar Number Already Exists!", 400)
+      new ErrorHandler("User With This Aadhaar Number Already Exists!", 400)
     );
   }
 
-  user = await Users.create({
+  // ----------------------------
+  // Verify OTP (Only after all validations pass)
+  // ----------------------------
+  const otpRecord = await Otp.findOne({
+    email: normalizedEmail,
+  }).sort({ createdAt: -1 });
+
+  if (!otpRecord) {
+    return next(
+      new ErrorHandler(
+        "OTP expired or not requested. Please request a new OTP.",
+        400
+      )
+    );
+  }
+
+  const isOtpValid = await bcrypt.compare(otp, otpRecord.otp);
+
+  if (!isOtpValid) {
+    return next(new ErrorHandler("Invalid OTP!", 400));
+  }
+
+  // Create user
+  const newUser = await Users.create({
     firstName,
     lastName: lastName || "",
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
     phone,
     password,
     gender,
     dob,
     adhar: adhar.trim(),
-    role,
+    role: "Patient",
   });
 
-  generateToken(user, "User Registered!", 200, res);
+  // Delete OTP after successful registration
+  await Otp.deleteMany({ email: normalizedEmail });
+
+  generateToken(newUser, "User Registered Successfully!", 200, res);
 });
 
 // User Login
@@ -114,31 +153,104 @@ export const login = catchAsyncErrors(async (req, res, next) => {
   generateToken(user, "User Logged In Successfully!", 200, res);
 });
 
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+export const googleLogin = catchAsyncErrors(async (req, res, next) => {
+  const { credential, role } = req.body;
+
+  if (!credential || !role) {
+    return next(new ErrorHandler("Missing Google credential or role!", 400));
+  }
+
+  // Verify the token with Google — never trust a client-submitted token blindly
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (error) {
+    return next(new ErrorHandler("Invalid Google credential!", 400));
+  }
+
+  if (!payload.email_verified) {
+    return next(new ErrorHandler("Google email is not verified!", 400));
+  }
+
+  const email = payload.email.trim().toLowerCase();
+
+  const user = await Users.findOne({ email });
+  if (!user) {
+    return next(
+      new ErrorHandler(
+        "No account found with this email. Please register first.",
+        404
+      )
+    );
+  }
+
+  if (role !== user.role) {
+    return next(new ErrorHandler("User With This Role Not Found!", 400));
+  }
+
+  generateToken(user, "User Logged In Successfully!", 200, res);
+});
+
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
-  const { firstName, lastName, email, phone, password, gender, dob, adhar, confirmPassword } =
-    req.body;
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    confirmPassword,
+    gender,
+    dob,
+    adhar,
+    otp,
+  } = req.body;
+
+  // ==========================
+  // Required Fields
+  // ==========================
 
   if (
     !firstName ||
     !email ||
     !phone ||
     !password ||
+    !confirmPassword ||
     !gender ||
     !dob ||
     !adhar ||
-    !confirmPassword
+    !otp
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
+  // ==========================
+  // Password Validation
+  // ==========================
+
   if (password !== confirmPassword) {
     return next(
-      new ErrorHandler("Password and Confirm Password do not match!", 400)
+      new ErrorHandler(
+        "Password and Confirm Password do not match!",
+        400
+      )
     );
   }
 
-  // --- DOB validation: cannot be a future date ---
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // ==========================
+  // DOB Validation
+  // ==========================
+
   const dobDate = new Date(dob);
+
   if (isNaN(dobDate.getTime())) {
     return next(new ErrorHandler("Invalid Date of Birth!", 400));
   }
@@ -148,38 +260,109 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
 
   if (dobDate.getTime() > today.getTime()) {
     return next(
-      new ErrorHandler("Date of Birth cannot be a future date!", 400)
+      new ErrorHandler(
+        "Date of Birth cannot be a future date!",
+        400
+      )
     );
   }
 
-  // --- Email uniqueness check ---
-  const isEmailRegistered = await Users.findOne({
-    email: email.trim().toLowerCase(),
+  // ==========================
+  // Phone Validation
+  // ==========================
+
+  if (phone.trim().length !== 10) {
+    return next(
+      new ErrorHandler(
+        "Mobile Number must contain exactly 10 digits!",
+        400
+      )
+    );
+  }
+
+  // ==========================
+  // Aadhaar Validation
+  // ==========================
+
+  if (adhar.trim().length !== 12) {
+    return next(
+      new ErrorHandler(
+        "Aadhaar Number must contain exactly 12 digits!",
+        400
+      )
+    );
+  }
+
+  // ==========================
+  // Duplicate Email Check
+  // ==========================
+
+  const existingEmail = await Users.findOne({
+    email: normalizedEmail,
   });
-  if (isEmailRegistered) {
+
+  if (existingEmail) {
     return next(
       new ErrorHandler(
-        `${isEmailRegistered.role} with this email Already Exist!`,
+        `${existingEmail.role} with this email already exists!`,
         400
       )
     );
   }
 
-  // --- Adhar uniqueness check ---
-  const isAdharRegistered = await Users.findOne({ adhar: adhar.trim() });
-  if (isAdharRegistered) {
+  // ==========================
+  // Duplicate Aadhaar Check
+  // ==========================
+
+  const existingAdhar = await Users.findOne({
+    adhar: adhar.trim(),
+  });
+
+  if (existingAdhar) {
     return next(
       new ErrorHandler(
-        `${isAdharRegistered.role} with this Adhar Number Already Exist!`,
+        `${existingAdhar.role} with this Aadhaar Number already exists!`,
         400
       )
     );
   }
 
-  const admin = await Users.create({
+  // ==========================
+  // OTP Verification
+  // ==========================
+
+  const otpRecord = await Otp.findOne({
+    email: normalizedEmail,
+  }).sort({
+    createdAt: -1,
+  });
+
+  if (!otpRecord) {
+    return next(
+      new ErrorHandler(
+        "OTP expired or not requested. Please request a new OTP.",
+        400
+      )
+    );
+  }
+
+  const isOtpValid = await bcrypt.compare(
+    otp,
+    otpRecord.otp
+  );
+
+  if (!isOtpValid) {
+    return next(new ErrorHandler("Invalid OTP!", 400));
+  }
+
+  // ==========================
+  // Create Admin
+  // ==========================
+
+  await Users.create({
     firstName,
     lastName: lastName || "",
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
     phone,
     password,
     gender,
@@ -188,9 +371,14 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
     role: "Admin",
   });
 
+  // Consume OTP only after successful registration
+  await Otp.deleteMany({
+    email: normalizedEmail,
+  });
+
   res.status(200).json({
     success: true,
-    message: "New Admin Registered!",
+    message: "New Admin Registered Successfully!",
   });
 });
 
@@ -247,6 +435,7 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     password,
     confirmPassword,
     doctorDepartment,
+    otp,
   } = req.body;
 
   console.log("Incoming doctor registration payload:", {
@@ -264,7 +453,8 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     !gender ||
     !password ||
     !confirmPassword ||
-    !doctorDepartment
+    !doctorDepartment ||
+    !otp
   ) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
@@ -275,16 +465,18 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  // --- DOB validation ---
-  // Expecting an ISO-style date string like "YYYY-MM-DD" from an <input type="date">
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // ==========================
+  // Validate DOB
+  // ==========================
+
   const dobDate = new Date(dob);
-  console.log("Parsed dobDate:", dobDate, "Now:", new Date());
 
   if (isNaN(dobDate.getTime())) {
     return next(new ErrorHandler("Invalid Date of Birth!", 400));
   }
 
-  // Zero-out time on "now" so today's date itself is still allowed
   const today = new Date();
   today.setHours(23, 59, 59, 999);
 
@@ -294,56 +486,132 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  // --- Email uniqueness check ---
-  const isEmailRegistered = await Users.findOne({
-    email: email.trim().toLowerCase(),
-  });
-  console.log("isEmailRegistered:", isEmailRegistered);
-  if (isEmailRegistered) {
+  // ==========================
+  // Phone Validation
+  // ==========================
+
+  if (phone.trim().length !== 10) {
+    return next(
+      new ErrorHandler("Mobile Number must contain exactly 10 digits!", 400)
+    );
+  }
+
+  // ==========================
+  // Aadhaar Validation
+  // ==========================
+
+  if (adhar.trim().length !== 12) {
+    return next(
+      new ErrorHandler("Aadhaar Number must contain exactly 12 digits!", 400)
+    );
+  }
+
+  // ==========================
+  // Existing User Check
+  // ==========================
+
+  const existingEmail = await Users.findOne({ email: normalizedEmail });
+
+  if (existingEmail) {
     return next(
       new ErrorHandler("Doctor With This Email Already Exists!", 400)
     );
   }
 
-  // --- Adhar uniqueness check ---
-  const isAdharRegistered = await Users.findOne({ adhar: adhar.trim() });
-  console.log("isAdharRegistered:", isAdharRegistered);
-  if (isAdharRegistered) {
+  const existingAdhar = await Users.findOne({
+    adhar: adhar.trim(),
+  });
+
+  if (existingAdhar) {
     return next(
-      new ErrorHandler("Doctor With This Adhar Number Already Exists!", 400)
+      new ErrorHandler(
+        "Doctor With This Aadhaar Number Already Exists!",
+        400
+      )
     );
   }
 
-  // --- Doctor avatar (optional) ---
+  // ==========================
+  // Avatar Validation
+  // ==========================
+
   let docAvatarData;
+
   if (req.files && req.files.docAvatar) {
     const { docAvatar } = req.files;
-    const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
+
+    const allowedFormats = [
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ];
+
     if (!allowedFormats.includes(docAvatar.mimetype)) {
-      return next(new ErrorHandler("File Format Not Supported!", 400));
+      return next(
+        new ErrorHandler("File Format Not Supported!", 400)
+      );
     }
+
     const cloudinaryResponse = await cloudinary.uploader.upload(
       docAvatar.tempFilePath
     );
+
     if (!cloudinaryResponse || cloudinaryResponse.error) {
       console.error(
         "Cloudinary Error:",
-        cloudinaryResponse.error || "Unknown Cloudinary error"
+        cloudinaryResponse.error || "Unknown Cloudinary Error"
       );
+
       return next(
-        new ErrorHandler("Failed To Upload Doctor Avatar To Cloudinary", 500)
+        new ErrorHandler(
+          "Failed To Upload Doctor Avatar To Cloudinary",
+          500
+        )
       );
     }
+
     docAvatarData = {
       public_id: cloudinaryResponse.public_id,
       url: cloudinaryResponse.secure_url,
     };
   }
 
+  // ==========================
+  // OTP Verification
+  // ==========================
+
+  const otpRecord = await Otp.findOne({
+    email: normalizedEmail,
+  }).sort({
+    createdAt: -1,
+  });
+
+  if (!otpRecord) {
+    return next(
+      new ErrorHandler(
+        "OTP expired or not requested. Please request a new OTP.",
+        400
+      )
+    );
+  }
+
+  const isOtpValid = await bcrypt.compare(
+    otp,
+    otpRecord.otp
+  );
+
+  if (!isOtpValid) {
+    return next(new ErrorHandler("Invalid OTP!", 400));
+  }
+
+  // ==========================
+  // Create Doctor
+  // ==========================
+
   const doctorPayload = {
     firstName,
     lastName: lastName || "",
-    email: email.trim().toLowerCase(),
+    email: normalizedEmail,
     phone,
     adhar: adhar.trim(),
     dob,
@@ -358,9 +626,15 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
   }
 
   const doctor = await Users.create(doctorPayload);
+
+  // Consume OTP only after successful registration
+  await Otp.deleteMany({
+    email: normalizedEmail,
+  });
+
   res.status(200).json({
     success: true,
-    message: "New Doctor Registered",
+    message: "New Doctor Registered Successfully!",
     doctor,
   });
 });
