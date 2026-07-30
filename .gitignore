@@ -1,2 +1,7 @@
+# Dependencies
 node_modules/
-"config.env"
+
+# Environment files
+Backend/config/config.env
+Dashboard/.env
+Frontend/.env
